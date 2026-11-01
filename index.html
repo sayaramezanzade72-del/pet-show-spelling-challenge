@@ -1,0 +1,484 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pet Show – Spelling Challenge</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+}
+
+.container {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 25px;
+  padding: 30px 25px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+h1 {
+  color: #5b55c7;
+  margin-top: 0;
+  font-size: 28px;
+}
+
+.subtitle {
+  color: #777;
+  margin-bottom: 25px;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  font-size: 17px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 13px 25px;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #6c63d9;
+  color: white;
+  margin: 8px;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #5148bd;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hidden {
+  display: none;
+}
+
+.name-label {
+  font-weight: bold;
+  color: #555;
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  color: #555;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.lives {
+  color: #ef476f;
+  font-size: 22px;
+  letter-spacing: 3px;
+}
+
+.animal {
+  font-size: 110px;
+  margin: 15px 0;
+}
+
+.question {
+  font-size: 21px;
+  color: #444;
+  font-weight: bold;
+}
+
+.answer-input {
+  font-size: 22px;
+  letter-spacing: 2px;
+  text-transform: lowercase;
+}
+
+.feedback {
+  min-height: 30px;
+  font-weight: bold;
+  font-size: 17px;
+  margin: 12px 0;
+}
+
+.correct {
+  color: #20a66b;
+}
+
+.wrong {
+  color: #e63946;
+}
+
+.result-emoji {
+  font-size: 75px;
+  margin: 15px;
+}
+
+.result-text {
+  font-size: 23px;
+  color: #5148bd;
+  font-weight: bold;
+}
+
+.teacher {
+  margin-top: 25px;
+  color: #999;
+  font-size: 13px;
+}
+
+.small-text {
+  color: #888;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div id="startScreen">
+    <h1>🐾 Pet Show</h1>
+    <p class="subtitle">Spelling Challenge</p>
+
+    <div class="name-label">Enter your name to start:</div>
+    <input
+      type="text"
+      id="studentName"
+      placeholder="Your name"
+      autocomplete="off"
+    >
+
+    <button onclick="startGame()">Start Game</button>
+
+    <p class="small-text">Listen carefully and spell the animal words!</p>
+  </div>
+
+
+  <div id="gameScreen" class="hidden">
+
+    <h1>🐾 Pet Show</h1>
+
+    <div class="info">
+      <span id="questionNumber">Question 1 / 9</span>
+      <span class="lives" id="lives">❤️ ❤️ ❤️</span>
+    </div>
+
+    <div class="animal" id="animalEmoji">🐴</div>
+
+    <div class="question">Listen and spell the word!</div>
+
+    <button onclick="repeatWord()">🔊 Listen Again</button>
+
+    <input
+      type="text"
+      id="answer"
+      class="answer-input"
+      placeholder="Type the word here"
+      autocomplete="off"
+      autocapitalize="none"
+    >
+
+    <div class="feedback" id="feedback"></div>
+
+    <button id="checkButton" onclick="checkAnswer()">Check</button>
+
+    <button id="nextButton" class="hidden" onclick="nextQuestion()">
+      Next →
+    </button>
+
+  </div>
+
+
+  <div id="resultScreen" class="hidden">
+
+    <h1>Game Over!</h1>
+
+    <div class="result-emoji" id="resultEmoji">🏆</div>
+
+    <p id="resultMessage" class="result-text"></p>
+
+    <p id="finalScore"></p>
+
+    <button onclick="location.reload()">Play Again</button>
+
+  </div>
+
+  <div class="teacher">
+    Created by Ms. Ramezanzadeh
+  </div>
+
+</div>
+
+
+<script>
+
+const animals = [
+  { word: "donkey", emoji: "🫏" },
+  { word: "elephant", emoji: "🐘" },
+  { word: "spider", emoji: "🕷️" },
+  { word: "cat", emoji: "🐱" },
+  { word: "rat", emoji: "🐀" },
+  { word: "frog", emoji: "🐸" },
+  { word: "duck", emoji: "🦆" },
+  { word: "lizard", emoji: "🦎" },
+  { word: "dog", emoji: "🐶" }
+];
+
+let questions = [];
+let currentQuestion = 0;
+let lives = 3;
+let score = 0;
+let student = "";
+let currentWord = "";
+
+
+/* Text-to-speech */
+
+function speakWord(word) {
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(word);
+
+  speech.lang = "en-US";
+  speech.rate = 0.8;
+  speech.pitch = 1;
+
+  window.speechSynthesis.speak(speech);
+}
+
+
+/* Start game */
+
+function startGame() {
+
+  const nameInput = document.getElementById("studentName");
+  student = nameInput.value.trim();
+
+  if (student === "") {
+    alert("Please enter your name!");
+    nameInput.focus();
+    return;
+  }
+
+  questions = [...animals].sort(() => Math.random() - 0.5);
+
+  currentQuestion = 0;
+  lives = 3;
+  score = 0;
+
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("gameScreen").classList.remove("hidden");
+  document.getElementById("resultScreen").classList.add("hidden");
+
+  showQuestion();
+}
+
+
+/* Update lives */
+
+function updateLives() {
+  document.getElementById("lives").textContent =
+    "❤️ ".repeat(lives) + "🖤 ".repeat(3 - lives);
+}
+
+
+/* Show question */
+
+function showQuestion() {
+
+  if (currentQuestion >= questions.length) {
+    finishGame();
+    return;
+  }
+
+  const item = questions[currentQuestion];
+
+  currentWord = item.word;
+
+  document.getElementById("questionNumber").textContent =
+    `Question ${currentQuestion + 1} / ${questions.length}`;
+
+  document.getElementById("animalEmoji").textContent = item.emoji;
+
+  document.getElementById("answer").value = "";
+  document.getElementById("answer").disabled = false;
+
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("feedback").className = "feedback";
+
+  document.getElementById("checkButton").classList.remove("hidden");
+  document.getElementById("checkButton").disabled = false;
+
+  document.getElementById("nextButton").classList.add("hidden");
+
+  updateLives();
+
+  document.getElementById("answer").focus();
+
+  // Speak the word automatically
+  speakWord(currentWord);
+}
+
+
+/* Repeat pronunciation */
+
+function repeatWord() {
+  speakWord(currentWord);
+}
+
+
+/* Check answer */
+
+function checkAnswer() {
+
+  const answerInput = document.getElementById("answer");
+  const answer = answerInput.value.trim().toLowerCase();
+
+  const feedback = document.getElementById("feedback");
+
+  if (answer === "") {
+    feedback.textContent = "Please type your answer!";
+    feedback.className = "feedback wrong";
+    answerInput.focus();
+    return;
+  }
+
+  document.getElementById("checkButton").disabled = true;
+  answerInput.disabled = true;
+
+  if (answer === currentWord) {
+
+    score++;
+
+    feedback.textContent = "🎉 Excellent! Correct answer!";
+    feedback.className = "feedback correct";
+
+    document.getElementById("checkButton").classList.add("hidden");
+
+    if (currentQuestion === questions.length - 1) {
+      setTimeout(finishGame, 1000);
+    } else {
+      setTimeout(() => {
+        currentQuestion++;
+        showQuestion();
+      }, 1000);
+    }
+
+  } else {
+
+    lives--;
+    updateLives();
+
+    if (lives <= 0) {
+
+      feedback.textContent = "Game Over! No lives left.";
+      feedback.className = "feedback wrong";
+
+      setTimeout(finishGame, 1200);
+
+    } else {
+
+      feedback.textContent = "❌ Try again next time!";
+      feedback.className = "feedback wrong";
+
+      document.getElementById("checkButton").classList.add("hidden");
+      document.getElementById("nextButton").classList.remove("hidden");
+    }
+  }
+}
+
+
+/* Next question after a wrong answer */
+
+function nextQuestion() {
+
+  currentQuestion++;
+  showQuestion();
+}
+
+
+/* Finish game */
+
+function finishGame() {
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  document.getElementById("gameScreen").classList.add("hidden");
+  document.getElementById("resultScreen").classList.remove("hidden");
+
+  const resultMessage = document.getElementById("resultMessage");
+  const resultEmoji = document.getElementById("resultEmoji");
+  const finalScore = document.getElementById("finalScore");
+
+  finalScore.textContent = `${student}, your score is ${score} / 9`;
+
+  if (lives > 0 && currentQuestion >= questions.length - 1 && score === 9) {
+
+    resultEmoji.textContent = "🏆";
+    resultMessage.textContent = "Amazing Job! You Won!";
+
+  } else {
+
+    resultEmoji.textContent = "💪";
+    resultMessage.textContent = "Good Try! Keep Practicing!";
+
+  }
+}
+
+
+/* Enter key support */
+
+document.getElementById("studentName").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    startGame();
+  }
+});
+
+document.getElementById("answer").addEventListener("keydown", function(event) {
+  if (event.key === "Enter") {
+    if (!document.getElementById("checkButton").classList.contains("hidden")) {
+      checkAnswer();
+    } else if (!document.getElementById("nextButton").classList.contains("hidden")) {
+      nextQuestion();
+    }
+  }
+});
+
+</script>
+
+</body>
+</html>
